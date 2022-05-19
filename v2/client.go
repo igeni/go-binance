@@ -208,7 +208,7 @@ func NewClient(apiKey, secretKey string) *Client {
 	}
 }
 
-//NewProxiedClient passing a proxy url
+// NewProxiedClient passing a proxy url
 func NewProxiedClient(apiKey, secretKey, proxyUrl string) *Client {
 	proxy, err := url.Parse(proxyUrl)
 	if err != nil {
@@ -351,6 +351,12 @@ func (c *Client) callAPI(ctx context.Context, r *request, opts ...RequestOption)
 			err = cerr
 		}
 	}()
+
+	jsonRes := make(map[string]interface{})
+	_ = json.Unmarshal([]byte(data), &jsonRes)
+	jsonRes["header"] = res.Header
+	data, err = json.Marshal(jsonRes)
+
 	c.debug("response: %#v", res)
 	c.debug("response body: %s", string(data))
 	c.debug("response status code: %d", res.StatusCode)

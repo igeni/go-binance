@@ -2,9 +2,12 @@ package binance
 
 import (
 	"context"
-	"net/http"
-
+	"fmt"
 	"github.com/adshao/go-binance/v2/common"
+	"math"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 // DepthService show depth info
@@ -64,6 +67,28 @@ func (s *DepthService) Do(ctx context.Context, opts ...RequestOption) (res *Dept
 			Quantity: item.GetIndex(1).MustString(),
 		}
 	}
+
+	headerMap := j.Get("header").MustMap()
+	weight := fmt.Sprintf("%s", headerMap["X-Mbx-Used-Weight"])
+	weight = strings.Trim(strings.Trim(weight, "]"), "[")
+	weight1m := fmt.Sprintf("%s", headerMap["X-Mbx-Used-Weight"])
+	weight1m = strings.Trim(strings.Trim(weight1m, "]"), "[")
+	uuid := fmt.Sprintf("%s", headerMap["X-Mbx-Uuid"])
+	uuid = strings.Trim(strings.Trim(uuid, "]"), "[")
+	weightInt64, err := strconv.ParseInt(weight, 10, 64)
+	if err != nil {
+		weightInt64 = math.MaxInt64
+	}
+	weight1mInt64, err := strconv.ParseInt(weight1m, 10, 64)
+	if err != nil {
+		weight1mInt64 = math.MaxInt64
+	}
+	res.Header = ResponseHeader{
+		XMbxUsedWeight:   weightInt64,
+		XMbxUsedWeight1m: weight1mInt64,
+		XMbxUuid:         uuid,
+	}
+
 	return res, nil
 }
 
@@ -72,6 +97,13 @@ type DepthResponse struct {
 	LastUpdateID int64 `json:"lastUpdateId"`
 	Bids         []Bid `json:"bids"`
 	Asks         []Ask `json:"asks"`
+	Header       ResponseHeader
+}
+
+type ResponseHeader struct {
+	XMbxUuid         string
+	XMbxUsedWeight   int64
+	XMbxUsedWeight1m int64
 }
 
 // Ask is a type alias for PriceLevel.
